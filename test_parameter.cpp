@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     p.read(argc, argv);
     
     //-------------------- basic +/* (returns boost::any) ------------------------------------------
-    p["img_dir"] = p["prog_dir"] + "img/";
+    p["img_dir"] = p["prog_dir"] + "/img";
     p["y"] = p["x"] * 10;
     p["magn"] = 13.45 + p["energy"];
     

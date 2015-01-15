@@ -9,7 +9,9 @@
 using namespace addon;
 
 int main(int argc, char * argv[]) {
-    log_class log("bla.txt");
+    parameter.read(argc, argv);
+    
+    log_class log; //default name prog_dir + "/log.txt"
 
     log["energy"] = 12;
     log["magn"] = 123.4;
