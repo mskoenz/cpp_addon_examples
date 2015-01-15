@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) {
     //-------------------------- set defaults ------------------------------------------------------
     p["energy"] = 1.23;
     p["x"] = 1;
-    p["p"] = std::string("bla");
+    p["p"] = "bla";
     
     //------------------ read argv and bash_in.txt if available ------------------------------------
     p.read(argc, argv);
