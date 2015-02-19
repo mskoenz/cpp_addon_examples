@@ -49,13 +49,6 @@ namespace addon {
     };
     
     //============================ addition ========================================================
-    //~ if(a.type() == typeid(std::string))             \
-            //~ res = std::string(a) + (std::string*)void*(b);\
-        //~ else if(a.type() == typeid(double))             \
-            //~ res = double(a) OP (std::string*)void*(b);\
-        //~ else if(a.type() == typeid(int))                \
-            //~ res = int(a) OP (std::string*)void*(b);   \
-    
     #define OP_SUPPORT(NAME, OP)                        \
     template<typename T, bool, bool, bool>              \
     struct NAME##_helper {                              \
@@ -139,16 +132,48 @@ namespace addon {
             if(int(map_["warn_"]))
                 WARNING(text);
         }
-        void read(int argc, char * argv[]) {
-            //======================= get program dir ==============================================
-            std::string path_dir = abspath(argv);
-            (*this)["prog_dir"] = path_dir;
+        void read(uint argc, char * argv[]) {
+            //======================= get workin dir / program dir =================================
+            std::string wd = abspath(argv);
+            
+            //------------------- search argv for "wd" -------------------
+            std::string text = "";
+            //~ bool found = false;
+            
+            for(uint i = 1; i < argc; ++i) {
+                std::string s = argv[i];
+                if(s.find("wd") != std::string::npos) {
+                    if(s.find("-wd") != std::string::npos)
+                        text = argv[i+1];
+                    else {
+                        text = s;
+                        if(i < argc - 1) // in case it is "wd= bla" or "wd =bla"
+                            text += " " + std::string(argv[i + 1]);
+                        if(i < argc - 2) // since it could be "wd = bla"
+                            text += " " + std::string(argv[i + 2]);
+                        
+                        text = std::regex_replace(text, std::regex(" ?= ?"), "="); // kill whitespace
+                        if(text.find(" ") != std::string::npos) {
+                            int p = text.find(" ");
+                            text = text.erase(p, text.size());
+                        }
+                        text = text.erase(0, 3); //remove "wd="
+                    }
+                    //~ found = true;
+                    if(text[0] == '/')
+                        wd = text;
+                    else
+                        wd += "/" + text;
+                }
+            }
+            
+            (*this)["wd"] = wd;
             
             //===================== format incoming argv ===========================================
             std::stringstream ss;
             //--------------- in case there is a bash_in.txt, read it ------------------------------
             std::ifstream ifs;
-            ifs.open(path_dir + "/bash_in.txt");
+            ifs.open(wd + "/bash_in.txt");
             
             if(ifs.is_open()) {
                 GREEN("bash_in.txt file found");
@@ -161,11 +186,11 @@ namespace addon {
                 ifs.close();
             }
             //---------------- add normal argv last (higher prio) ----------------------------------
-            for(int i = 1; i < argc; ++i) {
+            for(uint i = 1; i < argc; ++i) {
                 ss << argv[i] << " ";
             }
             //----------------------- kill whitespace ----------------------------------------------
-            std::string text = ss.str();
+            text = ss.str();
             text = std::regex_replace(text, std::regex(" ?= ?"), "="); // kill whitespace
             
             //-------------------------- split -----------------------------------------------------
@@ -193,6 +218,8 @@ namespace addon {
                 // checking if = sign
                 if(w.find("=") != std::string::npos) {
                     std::string key = w.substr(0, w.find("="));
+                    if(key == "wd")
+                        continue;
                     std::string val = w.substr(w.find("=") + 1, w.size());
                     if(has_param(key)) {
                         std::stringstream ss;
@@ -206,6 +233,9 @@ namespace addon {
                 if(w[0] == '-' and w.size() > 1) {
                     std::string key = w.substr(1, w.size());
                     if(i + 1 < v.size() and v[i + 1][0] != '-' and v[i + 1].find("=") == std::string::npos) { // param
+                        pas = true;
+                        if(key == "wd")
+                            continue;
                         std::string val = v[i + 1];
                         //-------------- just checking for false input -----------------------------
                         if(has_param(key)) {
@@ -215,7 +245,6 @@ namespace addon {
                         }
                         //----------------- setting the parameter ----------------------------------
                         add_helper(key, val);
-                        pas = true;
                     }
                     else { // flag
                         //-------------- just checking for false input -----------------------------
@@ -246,7 +275,9 @@ namespace addon {
                 }
             }
         }
-        
+        map_type const & map() const {
+            return map_;
+        }
         //=========================== query ========================================================
         bool has_param(std::string const & key) const {
             if(map_.find(key) != map_.end())

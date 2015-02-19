@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     
     using pgr = addon::progress;
     
-    int n = 1000;
+    uint n = 1000;
     double time = 10;
     
     //------------------- parameter read has to happen before pgr.set_load -------------------
